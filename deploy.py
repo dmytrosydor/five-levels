@@ -7,7 +7,7 @@
 Запуск (спершу один раз увійти: uvx --from huggingface_hub hf auth login):
     uv run deploy.py
 
-Викладаються лише файли з останнього коміту, тому .env з ключем у Space не потрапить.
+Викладаються лише файли сторінки з останнього коміту, тому .env з ключем у Space не потрапить.
 """
 
 import subprocess
@@ -18,9 +18,8 @@ from pathlib import Path
 from huggingface_hub import HfApi
 
 SPACE_NAME = "five-levels"
-# Безкоштовний cpu-basic для Gradio на HuggingFace доступний лише з підпискою PRO,
-# тому Space створюється на безкоштовному ZeroGPU.
-HARDWARE = "zero-a10g"
+# У Space потрапляють лише файли самої сторінки
+SITE_FILES = ["index.html", "style.css", "app.js", "levels.js", "example.json", "README.md"]
 HERE = Path(__file__).parent
 
 
@@ -35,20 +34,18 @@ def main() -> None:
         folder = Path(tmp) / "space"
         with tarfile.open(archive) as tar:
             tar.extractall(folder, filter="data")
-        files = sorted(p.name for p in folder.iterdir())
-        print(f"Space: {repo_id}\nФайли: {', '.join(files)}")
+        missing = [name for name in SITE_FILES if not (folder / name).is_file()]
+        if missing:
+            raise SystemExit(f"В останньому коміті немає файлів: {', '.join(missing)}")
+        print(f"Space: {repo_id}\nФайли: {', '.join(SITE_FILES)}")
 
-        api.create_repo(
-            repo_id,
-            repo_type="space",
-            space_sdk="gradio",
-            space_hardware=HARDWARE,
-            exist_ok=True,
-        )
+        api.create_repo(repo_id, repo_type="space", space_sdk="static", exist_ok=True)
         api.upload_folder(
             repo_id=repo_id,
             repo_type="space",
             folder_path=folder,
+            allow_patterns=SITE_FILES,
+            delete_patterns=["*"],  # прибирає зі Space файли попередніх версій
             commit_message="Deploy five-levels",
         )
 

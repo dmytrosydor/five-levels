@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>П'ять рівнів</title>
+    <meta name="description" content="Одна тема — п'ять пояснень: для дитини, школяра, студента, фахівця та експерта.">
+    <meta name="color-scheme" content="light dark">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500&family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Одна тема · п'ять глибин</p>
+        <h1>П'ять рівнів</h1>
+        <p class="lead">Введи будь-яку тему й отримай п'ять пояснень: для дитини, школяра, студента,
+          фахівця та експерта. Рівень перемикається повзунком. Сервіс робить один виклик мовної моделі
+          через OpenRouter і показує лише готові пояснення.</p>
+      </header>
+
+      <form id="form" class="panel" novalidate>
+        <div class="row">
+          <label class="field grow">
+            <span class="label">Тема</span>
+            <input id="topic" name="topic" type="text" maxlength="200" autocomplete="off"
+              placeholder="Наприклад: чорна діра, інфляція, нейронна мережа">
+          </label>
+          <button id="go" class="btn primary" type="submit">Пояснити</button>
+        </div>
+
+        <div id="chips" class="chips" role="group" aria-label="Теми для початку">
+          <button type="button">Чому небо блакитне</button>
+          <button type="button">Блокчейн</button>
+          <button type="button">Фотосинтез</button>
+          <button type="button">Інфляція</button>
+          <button type="button">Рекурсія</button>
+        </div>
+
+        <div class="row top">
+          <label class="field grow">
+            <span class="label">Ключ OpenRouter</span>
+            <input id="key" name="openrouter-key" type="password" autocomplete="off" spellcheck="false"
+              placeholder="sk-or-…">
+            <span class="hint">Ключ ніде не зберігається: браузер надсилає його лише в OpenRouter разом
+              із запитом. Отримати ключ можна на
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.</span>
+          </label>
+          <label class="field model">
+            <span class="label">Модель</span>
+            <select id="model" name="model">
+              <option value="anthropic/claude-haiku-5.5" selected>Claude Haiku 5.5</option>
+              <option value="openai/gpt-6-luna">GPT-6 Luna</option>
+              <option value="free">Безкоштовні моделі</option>
+              <option value="custom">Інша модель…</option>
+            </select>
+            <input id="custom-model" name="custom-model" type="text" autocomplete="off" spellcheck="false"
+              placeholder="наприклад, google/gemma-4-31b-it" aria-label="Назва моделі в OpenRouter" hidden>
+            <span class="hint">Платні коштують до 0,1 цента за запит. Безкоштовні слабші й бувають
+              перевантажені.</span>
+          </label>
+        </div>
+
+        <p id="error" class="error" role="alert" hidden></p>
+      </form>
+
+      <button id="example" class="btn ghost" type="button">Показати готовий приклад (без ключа і без запиту)</button>
+
+      <div id="result" class="result" aria-live="polite">
+        <section class="fl fl-empty">
+          <p>Тут з'явиться пояснення. Введи тему й натисни «Пояснити» або подивись готовий приклад —
+            для нього ключ не потрібен.</p>
+        </section>
+      </div>
+
+      <footer class="foot">
+        Лабораторна робота № 8 з дисципліни «Обробка мови методами штучного інтелекту».
+        <a href="https://github.com/dmytrosydor/five-levels" target="_blank" rel="noopener">Код на GitHub</a>
+      </footer>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

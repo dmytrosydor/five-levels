@@ -1,6 +1,3 @@
 .env
-__pycache__/
-.venv/
-.gradio/
-.pytest_cache/
 *.pdf
+.DS_Store
