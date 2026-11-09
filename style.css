@@ -1,0 +1,317 @@
+/* П'ять рівнів: стилі сторінки й блоку з результатом */
+
+.gradio-container {
+  max-width: 860px !important;
+  margin: 0 auto !important;
+}
+
+.fl-hero,
+.fl {
+  --ink: #14162b;
+  --muted: #5b6078;
+  --line: #e2e5ef;
+  --card: #ffffff;
+  --a: #b45309;
+  color: var(--ink);
+}
+
+/* Темна тема. Gradio переписує селектори з .dark, і в списку через кому
+   правильно обробляє лише перший, тому тут два окремі правила. */
+.dark .fl-hero {
+  --ink: #eef0fa;
+  --muted: #a3a8c3;
+  --line: #2c3050;
+  --card: #151829;
+  --a: #fbbf24;
+}
+
+.dark .fl {
+  --ink: #eef0fa;
+  --muted: #a3a8c3;
+  --line: #2c3050;
+  --card: #151829;
+  --a: #fbbf24;
+}
+
+/* Колір рівня: від теплого на поверхні до глибокого синього */
+.fl[data-level="1"] { --a: #b45309; }
+.fl[data-level="2"] { --a: #0f766e; }
+.fl[data-level="3"] { --a: #1d4ed8; }
+.fl[data-level="4"] { --a: #4338ca; }
+.fl[data-level="5"] { --a: #312e81; }
+.dark .fl[data-level="1"] { --a: #fbbf24; }
+.dark .fl[data-level="2"] { --a: #2dd4bf; }
+.dark .fl[data-level="3"] { --a: #60a5fa; }
+.dark .fl[data-level="4"] { --a: #818cf8; }
+.dark .fl[data-level="5"] { --a: #a5b4fc; }
+
+/* Шапка */
+.fl-hero {
+  padding: 28px 0 8px;
+}
+
+.fl-eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.fl-hero h1 {
+  margin: 0 0 12px;
+  font-family: "Unbounded", system-ui, sans-serif;
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.fl-lead {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Результат */
+.fl {
+  margin-top: 12px;
+}
+
+.fl-topic {
+  margin: 0 0 20px;
+  font-family: "Unbounded", system-ui, sans-serif;
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* Повзунок */
+.fl-control {
+  margin-bottom: 16px;
+}
+
+.fl-range {
+  display: block;
+  /* ширина й поля враховують бігунок (24px), щоб його центр збігався з підписом */
+  width: calc(80% + 24px);
+  margin: 0 calc(10% - 12px);
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fl-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--a) 28%, var(--line));
+}
+
+.fl-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--a) 28%, var(--line));
+}
+
+.fl-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: 4px solid var(--card);
+  border-radius: 50%;
+  background: var(--a);
+  box-shadow: 0 0 0 1px var(--a), 0 2px 6px rgb(20 22 43 / 0.25);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fl-range::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 4px solid var(--card);
+  border-radius: 50%;
+  background: var(--a);
+  box-shadow: 0 0 0 1px var(--a), 0 2px 6px rgb(20 22 43 / 0.25);
+}
+
+.fl-range:focus-visible {
+  outline: 2px solid var(--a);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.fl-ticks {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin-top: 4px;
+}
+
+.fl-tick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.fl-tick:hover {
+  color: var(--ink);
+}
+
+.fl-tick:focus-visible {
+  outline: 2px solid var(--a);
+  outline-offset: 0;
+}
+
+.fl-tick-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.fl-tick-aud {
+  font-size: 12px;
+}
+
+.fl-tick.on {
+  color: var(--a);
+}
+
+/* Картка. Усі п'ять пояснень лежать в одній клітинці сітки, тому висота не стрибає. */
+.fl-card {
+  display: grid;
+  position: relative;
+  overflow: hidden;
+  padding: 28px 32px;
+  border: 1px solid color-mix(in srgb, var(--a) 30%, var(--line));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--a) 7%, var(--card));
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.fl-panel {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.fl-panel.on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.fl-numeral {
+  position: absolute;
+  right: 10px;
+  bottom: -38px;
+  font-family: "Unbounded", system-ui, sans-serif;
+  font-size: 170px;
+  font-weight: 700;
+  line-height: 1;
+  color: color-mix(in srgb, var(--a) 13%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+
+.fl-kicker {
+  position: relative;
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--a);
+}
+
+.fl-text {
+  position: relative;
+  margin: 0;
+  max-width: 64ch;
+  font-family: "Literata", Georgia, serif;
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* Що глибший рівень, то щільніший текст */
+.fl-panel[data-l="1"] .fl-text { font-size: 21px; line-height: 1.55; }
+.fl-panel[data-l="2"] .fl-text { font-size: 19px; line-height: 1.6; }
+.fl-panel[data-l="4"] .fl-text { font-size: 17px; }
+.fl-panel[data-l="5"] .fl-text { font-size: 16.5px; }
+
+.fl-stats {
+  position: relative;
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fl-note {
+  margin: 12px 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.fl-empty {
+  padding: 28px 32px;
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  color: var(--muted);
+}
+
+.fl-empty p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+@media (max-width: 560px) {
+  .fl-card,
+  .fl-empty {
+    padding: 22px 20px;
+  }
+
+  .fl-tick-name {
+    font-size: 12px;
+  }
+
+  .fl-tick-aud {
+    display: none;
+  }
+
+  .fl-numeral {
+    font-size: 120px;
+    bottom: -26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-panel,
+  .fl-panel.on,
+  .fl-card,
+  .fl-range::-webkit-slider-thumb {
+    transition: none;
+  }
+}
+
+/* Кнопка «Пояснити» стоїть на рівні поля, а не розтягується на висоту рядка */
+.fl-go {
+  align-self: flex-end;
+}
