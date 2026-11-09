@@ -18,6 +18,9 @@ from pathlib import Path
 from huggingface_hub import HfApi
 
 SPACE_NAME = "five-levels"
+# Безкоштовний cpu-basic для Gradio на HuggingFace доступний лише з підпискою PRO,
+# тому Space створюється на безкоштовному ZeroGPU.
+HARDWARE = "zero-a10g"
 HERE = Path(__file__).parent
 
 
@@ -31,11 +34,17 @@ def main() -> None:
         subprocess.run(["git", "archive", "-o", str(archive), "HEAD"], cwd=HERE, check=True)
         folder = Path(tmp) / "space"
         with tarfile.open(archive) as tar:
-            tar.extractall(folder)
+            tar.extractall(folder, filter="data")
         files = sorted(p.name for p in folder.iterdir())
         print(f"Space: {repo_id}\nФайли: {', '.join(files)}")
 
-        api.create_repo(repo_id, repo_type="space", space_sdk="gradio", exist_ok=True)
+        api.create_repo(
+            repo_id,
+            repo_type="space",
+            space_sdk="gradio",
+            space_hardware=HARDWARE,
+            exist_ok=True,
+        )
         api.upload_folder(
             repo_id=repo_id,
             repo_type="space",
