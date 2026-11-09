@@ -13,6 +13,7 @@
   --danger: #b42318;
   --danger-bg: #fef3f2;
   --card: #ffffff;
+  --seg-on: #ffffff;
   --a: #b45309;
 }
 
@@ -30,6 +31,7 @@
     --danger: #fda29b;
     --danger-bg: #3a1614;
     --card: #151829;
+    --seg-on: #343a62;
     --a: #fbbf24;
   }
 }
@@ -130,6 +132,79 @@ a {
   font-weight: 600;
 }
 
+/* Вибір постачальника: дві великі кнопки-перемикачі */
+.provider {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.provider legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--field);
+}
+
+.seg label {
+  position: relative;
+  cursor: pointer;
+}
+
+.seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.seg span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: var(--muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg b {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.seg small {
+  font-size: 13px;
+}
+
+.seg label:hover span {
+  color: var(--ink);
+}
+
+.seg input:checked + span {
+  background: var(--seg-on);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(20 22 43 / 0.14);
+}
+
+.seg input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.panel > .hint {
+  margin: 0;
+}
+
 .hint {
   font-size: 13px;
   line-height: 1.45;
@@ -205,7 +280,10 @@ select:focus-visible {
 .btn.ghost {
   display: block;
   width: 100%;
+  height: auto;
+  min-height: 46px;
   margin-top: 12px;
+  padding: 10px 22px;
   background: transparent;
   border: 1px solid var(--line);
   color: var(--ink);
@@ -553,6 +631,7 @@ select:focus-visible {
   .fl-card,
   .fl-range::-webkit-slider-thumb,
   .btn,
+  .seg span,
   .chips button {
     transition: none;
   }

@@ -18,7 +18,7 @@
         <h1>П'ять рівнів</h1>
         <p class="lead">Введи будь-яку тему й отримай п'ять пояснень: для дитини, школяра, студента,
           фахівця та експерта. Рівень перемикається повзунком. Сервіс робить один виклик мовної моделі
-          через OpenRouter і показує лише готові пояснення.</p>
+          (безкоштовної через OpenRouter або Claude через Anthropic) і показує лише готові пояснення.</p>
       </header>
 
       <form id="form" class="panel" novalidate>
@@ -39,29 +39,62 @@
           <button type="button">Рекурсія</button>
         </div>
 
-        <div class="row top">
+        <fieldset class="provider">
+          <legend class="label">Чий ключ</legend>
+          <div class="seg">
+            <label>
+              <input type="radio" name="provider" value="openrouter" checked>
+              <span><b>OpenRouter</b><small>безкоштовні моделі</small></span>
+            </label>
+            <label>
+              <input type="radio" name="provider" value="anthropic">
+              <span><b>Anthropic</b><small>моделі Claude</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="row top" data-provider="openrouter">
           <label class="field grow">
             <span class="label">Ключ OpenRouter</span>
-            <input id="key" name="openrouter-key" type="password" autocomplete="off" spellcheck="false"
-              placeholder="sk-or-…">
-            <span class="hint">Ключ ніде не зберігається: браузер надсилає його лише в OpenRouter разом
-              із запитом. Отримати ключ можна на
+            <input id="key-openrouter" name="openrouter-key" type="password" autocomplete="off"
+              spellcheck="false" placeholder="sk-or-…">
+            <span class="hint">Використовується лише для безкоштовних моделей, тож запити нічого не
+              коштують. Ключ можна отримати на
               <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.</span>
           </label>
           <label class="field model">
-            <span class="label">Модель</span>
-            <select id="model" name="model">
-              <option value="anthropic/claude-haiku-5.5" selected>Claude Haiku 5.5</option>
-              <option value="openai/gpt-6-luna">GPT-6 Luna</option>
-              <option value="free">Безкоштовні моделі</option>
-              <option value="custom">Інша модель…</option>
+            <span class="label">Безкоштовна модель</span>
+            <select id="model-openrouter" name="openrouter-model">
+              <option value="nvidia/nemotron-3.5-super-vl:free" selected>Nemotron 3.5 Super</option>
+              <option value="google/gemma-4-31b-it:free">Gemma 4 31B</option>
+              <option value="auto">Авто: кілька по черзі</option>
+              <option value="custom">Інша безкоштовна…</option>
             </select>
             <input id="custom-model" name="custom-model" type="text" autocomplete="off" spellcheck="false"
-              placeholder="наприклад, google/gemma-4-31b-it" aria-label="Назва моделі в OpenRouter" hidden>
-            <span class="hint">Платні коштують до 0,1 цента за запит. Безкоштовні слабші й бувають
-              перевантажені.</span>
+              placeholder="назва, що закінчується на :free" aria-label="Назва безкоштовної моделі в OpenRouter" hidden>
+            <span class="hint">Безкоштовні моделі повільніші (до хвилини) й бувають перевантажені.</span>
           </label>
         </div>
+
+        <div class="row top" data-provider="anthropic" hidden>
+          <label class="field grow">
+            <span class="label">Ключ Anthropic</span>
+            <input id="key-anthropic" name="anthropic-key" type="password" autocomplete="off"
+              spellcheck="false" placeholder="sk-ant-…">
+            <span class="hint">Запити платні, гроші знімаються з твого рахунку Anthropic. Ключ можна
+              отримати на
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.</span>
+          </label>
+          <label class="field model">
+            <span class="label">Модель Claude</span>
+            <select id="model-anthropic" name="anthropic-model"></select>
+            <span class="hint">Haiku найшвидша й найдешевша (близько 0,1 цента за запит), Fable
+              найсильніша й найдорожча (кілька центів).</span>
+          </label>
+        </div>
+
+        <p class="hint">Ключі ніде не зберігаються: браузер надсилає ключ лише тому сервісу, якому він
+          належить, разом із запитом.</p>
 
         <p id="error" class="error" role="alert" hidden></p>
       </form>

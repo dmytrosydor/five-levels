@@ -5,13 +5,21 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
-  FREE,
+  ANTHROPIC,
+  ANTHROPIC_MODELS,
+  ANTHROPIC_URL,
+  FREE_AUTO,
   FREE_MODELS,
   LEVELS,
-  buildRequest,
+  OPENROUTER,
+  OPENROUTER_URL,
+  anthropicErrorText,
+  buildAnthropicRequest,
+  buildOpenRouterRequest,
   cleanTopic,
   errorText,
   explainTopic,
+  isFreeModel,
   parseLevels,
   plural,
   textStats,
@@ -73,30 +81,87 @@ test("cleanTopic прибирає зайві пробіли", () => {
   assert.equal(cleanTopic(undefined), "");
 });
 
-test("buildRequest: одна модель або список безкоштовних", () => {
-  const paid = buildRequest("тема", "anthropic/claude-haiku-5.5");
-  assert.equal(paid.model, "anthropic/claude-haiku-5.5");
-  assert.equal(paid.models, undefined);
-  assert.equal(paid.response_format.type, "json_object");
-  assert.match(paid.messages[1].content, /<<<тема>>>/);
-
-  const free = buildRequest("тема", FREE);
-  assert.deepEqual(free.models, FREE_MODELS);
-  assert.equal(free.model, undefined);
+test("isFreeModel пропускає лише безкоштовні моделі", () => {
+  for (const model of [...FREE_MODELS, "nvidia/nemotron-3.5-super-vl:free"]) {
+    assert.equal(isFreeModel(model), true, model);
+  }
+  for (const model of ["anthropic/claude-haiku-5.5", "openai/gpt-6-luna", "free", ":free", "", undefined]) {
+    assert.equal(isFreeModel(model), false, String(model));
+  }
 });
 
-test("explainTopic робить рівно один запит і повертає п'ять пояснень", async () => {
+test("buildOpenRouterRequest: одна безкоштовна модель або список", () => {
+  const one = buildOpenRouterRequest("тема", "google/gemma-4-31b-it:free");
+  assert.equal(one.model, "google/gemma-4-31b-it:free");
+  assert.equal(one.models, undefined);
+  assert.equal(one.response_format.type, "json_object");
+  assert.match(one.messages[1].content, /<<<тема>>>/);
+
+  const auto = buildOpenRouterRequest("тема", FREE_AUTO);
+  assert.deepEqual(auto.models, FREE_MODELS);
+  assert.equal(auto.model, undefined);
+  assert.ok(FREE_MODELS.every(isFreeModel));
+});
+
+test("ключ OpenRouter не використовується для платних моделей", async () => {
+  assert.throws(() => buildOpenRouterRequest("тема", "anthropic/claude-haiku-5.5"), /безкоштовними/);
+
+  const { impl, calls } = fakeFetch(200, {});
+  await assert.rejects(explainTopic(OPENROUTER, "тема", "k", "openai/gpt-6-luna", impl), (error) => {
+    assert.match(error.userMessage, /безкоштовними/);
+    return true;
+  });
+  assert.equal(calls.length, 0); // запит навіть не надсилається
+});
+
+test("buildAnthropicRequest: схема з п'ятьма рівнями, без temperature", () => {
+  const body = buildAnthropicRequest("тема", "claude-sonnet-5-5");
+  assert.equal(body.model, "claude-sonnet-5-5");
+  assert.equal(typeof body.system, "string");
+  assert.deepEqual(body.messages, [{ role: "user", content: "Тема: <<<тема>>>" }]);
+  assert.equal(body.temperature, undefined);
+  const { format } = body.output_config;
+  assert.equal(format.type, "json_schema");
+  assert.deepEqual(format.schema.required, LEVELS.map(({ key }) => key));
+  assert.equal(format.schema.additionalProperties, false);
+  assert.equal(buildAnthropicRequest("тема").model, ANTHROPIC_MODELS[0].id);
+});
+
+test("explainTopic через OpenRouter: один запит і п'ять пояснень", async () => {
   const { impl, calls } = fakeFetch(200, {
-    model: "test/model",
+    model: "google/gemma-4-31b-it:free",
     choices: [{ message: { content: `Ось відповідь: ${JSON.stringify(SAMPLE)}` } }],
   });
-  const out = await explainTopic("тема", "sk-test", "test/model", impl);
-  assert.deepEqual(out, { levels: SAMPLE, model: "test/model" });
+  const out = await explainTopic(OPENROUTER, "тема", "sk-test", FREE_AUTO, impl);
+  assert.deepEqual(out, { levels: SAMPLE, model: "google/gemma-4-31b-it:free" });
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, OPENROUTER_URL);
   assert.equal(calls[0].options.headers.Authorization, "Bearer sk-test");
 });
 
-test("explainTopic перетворює помилки на зрозумілі повідомлення", async () => {
+test("explainTopic через Anthropic: один запит, свої заголовки, блоки роздумів пропущено", async () => {
+  const { impl, calls } = fakeFetch(200, {
+    type: "message",
+    model: "claude-haiku-5-5",
+    stop_reason: "end_turn",
+    content: [
+      { type: "thinking", thinking: "" },
+      { type: "text", text: JSON.stringify(SAMPLE) },
+    ],
+  });
+  const out = await explainTopic(ANTHROPIC, "тема", "sk-ant-test", "claude-haiku-5-5", impl);
+  assert.deepEqual(out, { levels: SAMPLE, model: "claude-haiku-5-5" });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, ANTHROPIC_URL);
+  const { headers } = calls[0].options;
+  assert.equal(headers["x-api-key"], "sk-ant-test");
+  assert.equal(headers.Authorization, undefined);
+  assert.ok(headers["anthropic-version"]);
+  assert.equal(headers["anthropic-dangerous-direct-browser-access"], "true");
+  assert.equal(JSON.parse(calls[0].options.body).model, "claude-haiku-5-5");
+});
+
+test("explainTopic перетворює помилки OpenRouter на зрозумілі повідомлення", async () => {
   const cases = [
     [fakeFetch(401, { error: { message: "No auth", code: 401 } }), /не прийняв ключ/],
     [fakeFetch(429, { error: { message: "rate", code: 429 } }), /перевантажена/],
@@ -106,7 +171,29 @@ test("explainTopic перетворює помилки на зрозумілі �
     [fakeFetch(500, { error: { message: "boom" } }), /помилку 500\. boom/],
   ];
   for (const [{ impl }, pattern] of cases) {
-    await assert.rejects(explainTopic("тема", "k", "m", impl), (error) => {
+    await assert.rejects(explainTopic(OPENROUTER, "тема", "k", FREE_AUTO, impl), (error) => {
+      assert.match(error.userMessage, pattern);
+      return true;
+    });
+  }
+});
+
+test("explainTopic перетворює помилки Anthropic на зрозумілі повідомлення", async () => {
+  const apiError = (type, message) => ({ type: "error", error: { type, message } });
+  const cases = [
+    [fakeFetch(401, apiError("authentication_error", "invalid x-api-key")), /Anthropic не прийняв ключ/],
+    [fakeFetch(400, apiError("invalid_request_error", "Your credit balance is too low")), /немає коштів/],
+    [fakeFetch(402, apiError("billing_error", "billing")), /немає коштів/],
+    [fakeFetch(404, apiError("not_found_error", "model: claude-x")), /недоступна/],
+    [fakeFetch(429, apiError("rate_limit_error", "rate")), /ліміт запитів/],
+    [fakeFetch(529, apiError("overloaded_error", "Overloaded")), /перевантажений/],
+    [fakeFetch(400, apiError("invalid_request_error", "bad field")), /помилку 400\. bad field/],
+    [fakeFetch(200, { stop_reason: "refusal", content: [] }), /відмовилась/],
+    [fakeFetch(200, { stop_reason: "max_tokens", content: [{ type: "text", text: '{"child":' }] }), /ліміт довжини/],
+    [fakeFetch(200, { stop_reason: "end_turn", content: [{ type: "thinking", thinking: "" }] }), /порожню відповідь/],
+  ];
+  for (const [{ impl }, pattern] of cases) {
+    await assert.rejects(explainTopic(ANTHROPIC, "тема", "k", "claude-haiku-5-5", impl), (error) => {
       assert.match(error.userMessage, pattern);
       return true;
     });
@@ -117,14 +204,21 @@ test("explainTopic повідомляє про проблеми з мереже�
   const failing = async () => {
     throw new TypeError("Failed to fetch");
   };
-  await assert.rejects(explainTopic("тема", "k", "m", failing), (error) => {
-    assert.match(error.userMessage, /з'єднатися/);
-    return true;
-  });
+  for (const [provider, model, name] of [
+    [OPENROUTER, FREE_AUTO, /OpenRouter/],
+    [ANTHROPIC, "claude-haiku-5-5", /Anthropic/],
+  ]) {
+    await assert.rejects(explainTopic(provider, "тема", "k", model, failing), (error) => {
+      assert.match(error.userMessage, /з'єднатися/);
+      assert.match(error.userMessage, name);
+      return true;
+    });
+  }
 });
 
 test("errorText для невідомого статусу без деталей", () => {
   assert.equal(errorText(503, {}), "OpenRouter повернув помилку 503.");
+  assert.equal(anthropicErrorText(503, {}), "Anthropic повернув помилку 503.");
 });
 
 test("example.json містить усі п'ять рівнів", async () => {

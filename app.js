@@ -1,19 +1,28 @@
 // Робота зі сторінкою: форма, запит, показ результату, перемикання рівнів.
 
 import {
-  DEFAULT_MODEL,
+  ANTHROPIC,
+  ANTHROPIC_MODELS,
   LEVELS,
   MAX_TOPIC_LEN,
+  OPENROUTER,
   cleanTopic,
   explainTopic,
+  isFreeModel,
   parseLevels,
   textStats,
 } from "./levels.js";
 
 const form = document.querySelector("#form");
 const topicInput = document.querySelector("#topic");
-const keyInput = document.querySelector("#key");
-const modelSelect = document.querySelector("#model");
+const keyInputs = {
+  [OPENROUTER]: document.querySelector("#key-openrouter"),
+  [ANTHROPIC]: document.querySelector("#key-anthropic"),
+};
+const modelSelects = {
+  [OPENROUTER]: document.querySelector("#model-openrouter"),
+  [ANTHROPIC]: document.querySelector("#model-anthropic"),
+};
 const customModelInput = document.querySelector("#custom-model");
 const goButton = document.querySelector("#go");
 const exampleButton = document.querySelector("#example");
@@ -97,11 +106,15 @@ function renderResult(topic, levels, note) {
   applyLevel();
 }
 
-function renderLoading(topic) {
+function renderLoading(topic, provider) {
   const root = el("section", "fl fl-loading");
   root.append(el("p", "fl-eyebrow", "Тема"), el("h2", "fl-topic", topic));
   const card = el("div", "fl-card");
-  card.append(el("p", "fl-wait", "Модель пише п'ять пояснень. Зазвичай це займає до 10 секунд."));
+  const wait =
+    provider === OPENROUTER
+      ? "Модель пише п'ять пояснень. Безкоштовні моделі відповідають довго: до хвилини."
+      : "Модель пише п'ять пояснень. Зазвичай це займає до пів хвилини.";
+  card.append(el("p", "fl-wait", wait));
   for (const width of ["92%", "100%", "84%", "64%"]) {
     const line = el("span", "fl-skeleton");
     line.style.width = width;
@@ -126,20 +139,30 @@ async function onSubmit(event) {
   if (topic.length > MAX_TOPIC_LEN) {
     return fail(`Тема задовга. Скороти її до ${MAX_TOPIC_LEN} символів.`, topicInput);
   }
+  const provider = currentProvider();
+  const keyInput = keyInputs[provider];
   const apiKey = keyInput.value.trim();
-  if (!apiKey) return fail("Введи ключ OpenRouter у полі «Ключ OpenRouter».", keyInput);
+  if (!apiKey) {
+    const name = provider === OPENROUTER ? "OpenRouter" : "Anthropic";
+    return fail(`Введи ключ ${name} у полі «Ключ ${name}».`, keyInput);
+  }
 
-  let model = modelSelect.value;
-  if (model === CUSTOM) {
+  let model = modelSelects[provider].value;
+  if (provider === OPENROUTER && model === CUSTOM) {
     model = customModelInput.value.trim();
-    if (!model) return fail("Впиши назву моделі або обери модель зі списку.", customModelInput);
+    if (!isFreeModel(model)) {
+      return fail(
+        "Впиши назву безкоштовної моделі: вона закінчується на «:free», наприклад google/gemma-4-31b-it:free.",
+        customModelInput,
+      );
+    }
   }
 
   const previous = [...result.childNodes];
   setBusy(true);
-  renderLoading(topic);
+  renderLoading(topic, provider);
   try {
-    const { levels, model: usedModel } = await explainTopic(topic, apiKey, model || DEFAULT_MODEL);
+    const { levels, model: usedModel } = await explainTopic(provider, topic, apiKey, model);
     renderResult(topic, levels, `Модель: ${usedModel} · один виклик LLM`);
   } catch (error) {
     result.replaceChildren(...previous); // повертаємо те, що було до запиту
@@ -147,6 +170,19 @@ async function onSubmit(event) {
   } finally {
     setBusy(false);
   }
+}
+
+function currentProvider() {
+  return form.elements.provider.value === ANTHROPIC ? ANTHROPIC : OPENROUTER;
+}
+
+/** Показує поля лише обраного постачальника. Введені ключі при перемиканні не губляться. */
+function applyProvider() {
+  const provider = currentProvider();
+  for (const row of form.querySelectorAll("[data-provider]")) {
+    row.hidden = row.dataset.provider !== provider;
+  }
+  clearError();
 }
 
 function fail(message, field) {
@@ -173,11 +209,20 @@ async function onExample() {
 form.addEventListener("submit", onSubmit);
 exampleButton.addEventListener("click", onExample);
 
-modelSelect.addEventListener("change", () => {
-  const custom = modelSelect.value === CUSTOM;
+modelSelects[OPENROUTER].addEventListener("change", () => {
+  const custom = modelSelects[OPENROUTER].value === CUSTOM;
   customModelInput.hidden = !custom;
   if (custom) customModelInput.focus();
 });
+
+for (const { id, name } of ANTHROPIC_MODELS) {
+  modelSelects[ANTHROPIC].append(new Option(name, id));
+}
+
+form.addEventListener("change", (event) => {
+  if (event.target.name === "provider") applyProvider();
+});
+applyProvider();
 
 document.querySelector("#chips").addEventListener("click", (event) => {
   const chip = event.target.closest("button");
